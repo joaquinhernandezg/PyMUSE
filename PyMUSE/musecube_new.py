@@ -1,11 +1,29 @@
-from astropy.io import fits
-import astropy.units as u
-from mpdaf.obj import WCS
+import copy
+import os
+
 import numpy as np
+import astropy.units as u
+
+from astropy.io import fits
+from mpdaf.obj import WCS
+
 from .image import Image
 
 
+
 __all__ = ('MuseCube')
+
+def remove_dims_from_header(header, dim="3"):
+    header = copy.deepcopy(header)
+    l = []
+    
+    for i in header.keys():
+        if dim in i:
+            l.append(i)
+    for i in l:
+        del header[i]
+        
+    return header
 
 
 class MuseCube:
@@ -70,8 +88,8 @@ class MuseCube:
 
     def __load_from_fits_file(self, filename):
         hdulist = fits.open(filename)
-        self.header_0 = hdulist[0]
-        self.header_1 = hdulist[1]
+        self.header_0 = hdulist[0].header
+        self.header_1 = hdulist[1].header
 
         self.flux = hdulist[1].data.astype(np.float64)
         self.stat = hdulist[2].data.astype(np.float64)
@@ -90,18 +108,9 @@ class MuseCube:
 
             # These loops remove the third dimension from the header's keywords. This is neccesary in order to
             # create the white image and preserve the cube astrometry
-            l = []
-            for i in w_header_0.keys():
-                if '3' in i:
-                    l.append(i)
-            for i in l:
-                del w_header_0[i]
-            l = []
-            for i in w_header_1.keys():
-                if '3' in i:
-                    l.append(i)
-            for i in l:
-                del w_header_1[i]
+            w_header_0 = remove_dims_from_header(w_header_0)
+            w_header_1 = remove_dims_from_header(w_header_1)
+            
             w_header_1['WCSAXES'] = 2
             # prepare the header
             hdu = fits.HDUList()
@@ -151,7 +160,6 @@ class MuseCube:
     def __iter__(self):
         for i in range(self.flux.shape[0]):
             yield self[i, :, :] #thie should be image
-        pass #implement iterator
 
 
     def get_image(self, wv_input, fitsname='new_collapsed_cube.fits', type='sum', n_figure=2, save=False, stat=False,
