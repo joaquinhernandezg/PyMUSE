@@ -1,5 +1,11 @@
 from astropy.io import fits
 import astropy.units as u
+from mpdaf.obj import WCS
+import numpy as np
+from .image import Image
+
+
+__all__ = ('MuseCube')
 
 
 class MuseCube:
@@ -9,7 +15,7 @@ class MuseCube:
     """
 
     def __init__(self, filename_cube, filename_white=None, pixelsize=0.2 * u.arcsec,
-                 flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, input_wave_cal='air'):
+                 flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, input_wave_cal='air', data=None, stat=None, header_0=None, header_1=None):
         """
         Parameters
         ----------
@@ -30,17 +36,30 @@ class MuseCube:
         """
 
         # init
-        self.flux_units = flux_units #should be read from header
-        self.wave_cal = input_wave_cal
-        self.pixelsize = pixelsize #should be read from header
-
-
         if input_wave_cal not in ['air', 'vac']:
             raise Warning('input_wave_cal and output_wave_cal should be either "air" or "vac"')
-        self.filename = filename_cube
+        #agregar mas verificacion de parametros
+
+        self.wave_cal = input_wave_cal
+        self.flux_units = flux_units
+        self.pixel_size = pixelsize
+
+        self.header_0 = header_0
+        self.header_1 = header_1
         self.filename_white = filename_white
 
-        self.load_data()
+        if filename_cube:
+            self.__load_from_fits_file(filename_cube)
+        else:
+            self.flux = data
+            self.stat = stat
+
+        if self.header_1:
+            self.wcs = WCS(hdr=self.header_1.header)
+            #read pixelsize
+            #read flux_units
+
+        return
         self.white_data = fits.open(self.filename_white)[1].data
         self.hdulist_white = fits.open(self.filename_white)
         self.hdulist_white_temp = fits.open(self.filename_white)
@@ -49,20 +68,16 @@ class MuseCube:
 
         print("MuseCube: Ready!")
 
+    def __load_from_fits_file(self, filename):
+        hdulist = fits.open(filename)
+        self.header_0 = hdulist[0]
+        self.header_1 = hdulist[1]
+
+        self.flux = hdulist[1].data.astype(np.float64)
+        self.stat = hdulist[2].data.astype(np.float64)
+        return
+
     def load_data(self):
-        hdulist = fits.open(self.filename)
-        self.wcs = WCS(hdr = hdulist[1].header)
-        print("MuseCube: Loading the cube fluxes and variances...")
-
-        # import pdb; pdb.set_trace()
-        self.cube = hdulist[1].data
-        self.stat = hdulist[2].data
-
-        # for ivar weighting ; consider creating it in init ; takes long
-        # self.flux_over_ivar = self.cube / self.stat
-
-        self.header_1 = hdulist[1].header  # Necesito el header para crear una buena copia del white.
-        self.header_0 = hdulist[0].header
 
         if self.filename_white is None:
             print("MuseCube: No white image given, creating one.")
@@ -111,6 +126,33 @@ class MuseCube:
         wv_input = [[wave[0], wave[n - 1]]]
         white_image = self.get_image(wv_input, fitsname=new_white_fitsname, stat=stat, save=save)
         return white_image
+
+    def __getitem__(self, item):
+        """
+        modify for including wavelenght ranges in astropy units
+        """
+
+        data = self.flux.__getitem__(item)
+        stat = self.stat.__getitem__(item)
+
+        if isinstance(data, np.ndarray):
+            if data.ndim == 3:
+                #should modify headers
+                return MuseCube
+            elif data.ndim == 2:
+                # should modify headers
+                return self.flux[item]
+                return Image()
+            elif data.ndim == 1:
+                return Spectrum
+        else:
+            return data
+
+    def __iter__(self):
+        for i in range(self.flux.shape[0]):
+            yield self[i, :, :] #thie should be image
+        pass #implement iterator
+
 
     def get_image(self, wv_input, fitsname='new_collapsed_cube.fits', type='sum', n_figure=2, save=False, stat=False,
                   maskfile=None, inverse_mask=True):
