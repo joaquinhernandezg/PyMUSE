@@ -1,6 +1,8 @@
 import unittest
 from PyMUSE.musecube_new import MuseCube
+from PyMUSE.image import Image
 import numpy as np
+
 
 class TestCubeFromFile(unittest.TestCase):
     def setUp(self):
@@ -38,10 +40,33 @@ class TestGetItem(unittest.TestCase):
         self.assertIsInstance(value, np.float)
 
     def test_slice_return_a_cube(self):
+        # corregir en la clase
+        subcube = self.cube[:, :, :]
+        self.assertIsInstance(subcube, MuseCube)
+
+    def test_slice_return_an_image(self):
+        # corregir en la clase
+        image = self.cube[0, 0:2, 0:2]
+        self.assertIsInstance(image, Image)
+
+    def test_slice_return_an_Spectrum(self):
         return
         # corregir en la clase
-        cls = self.cube[:, :, :]
-        self.assertIsInstance(cls, MuseCube)
+        spec= self.cube[:, 2, 2]
+        self.assertIsInstance(image, Image)
+
+
+class TestIter(unittest.TestCase):
+    def setUp(self):
+        self.filename = "minicube.fits"
+        self.cube = MuseCube(self.filename)
+
+    def testIterReturnImage(self):
+        for image in self.cube:
+            self.assertIsInstance(image, Image)
+            return
+
+
 
 """
 class TestOtherThing(unittest.TestCase):
