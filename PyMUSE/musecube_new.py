@@ -14,6 +14,7 @@ from .image import Image
 __all__ = ('MuseCube')
 
 def remove_dims_from_header(header, dim="3"):
+    # no es buena idea hacer esto si se van a hacer espectros
     header = copy.deepcopy(header)
     l = []
     
@@ -145,7 +146,6 @@ class MuseCube:
         stat = self.stat.__getitem__(item)
 
         if isinstance(flux, np.ndarray):
-            print(flux.ndim)
             if flux.ndim == 3:
                 #should modify headers
                 return self.__to_obj(MuseCube, flux=flux, stat=stat)
@@ -177,6 +177,10 @@ class MuseCube:
             #modify header for wcs
             return MuseCube(flux_units=flux_units, pixelsize=pixelsize,
                          data=flux, stat=stat, header_0=header_0, header_1=header_1)
+
+        elif obj == Spectrum:
+            return Spectrum()
+
 
 
     def get_image(self, wv_input, fitsname='new_collapsed_cube.fits', type='sum', n_figure=2, save=False, stat=False,
