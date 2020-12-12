@@ -32,7 +32,7 @@ class MuseCube:
 
     """
 
-    def __init__(self, filename_cube, filename_white=None, pixelsize=0.2 * u.arcsec,
+    def __init__(self, filename_cube=None, filename_white=None, pixelsize=0.2 * u.arcsec,
                  flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, input_wave_cal='air', data=None, stat=None, header_0=None, header_1=None):
         """
         Parameters
@@ -73,7 +73,7 @@ class MuseCube:
             self.stat = stat
 
         if self.header_1:
-            self.wcs = WCS(hdr=self.header_1.header)
+            self.wcs = WCS(hdr=self.header_1)
             #read pixelsize
             #read flux_units
 
@@ -141,25 +141,42 @@ class MuseCube:
         modify for including wavelenght ranges in astropy units
         """
 
-        data = self.flux.__getitem__(item)
+        flux = self.flux.__getitem__(item)
         stat = self.stat.__getitem__(item)
 
-        if isinstance(data, np.ndarray):
-            if data.ndim == 3:
+        if isinstance(flux, np.ndarray):
+            print(flux.ndim)
+            if flux.ndim == 3:
                 #should modify headers
-                return MuseCube
-            elif data.ndim == 2:
+                return self.__to_obj(MuseCube, flux=flux, stat=stat)
+            elif flux.ndim == 2:
                 # should modify headers
-                return self.flux[item]
-                return Image()
-            elif data.ndim == 1:
+                return self.__to_obj(Image, flux=flux, stat=stat)
+            elif flux.ndim == 1:
                 return Spectrum
         else:
-            return data
+            return flux
 
     def __iter__(self):
         for i in range(self.flux.shape[0]):
-            yield self[i, :, :] #thie should be image
+            yield self[i, :, :]
+
+    def __to_obj(self, obj, flux, stat=None):
+        pixelsize = self.pixel_size
+        flux_units = self.flux_units
+        header_0 = self.header_0
+        header_1 = self.header_1
+
+        if obj == Image:
+            header_0 = remove_dims_from_header(header_0)
+            header_1 = remove_dims_from_header(header_1)
+            return Image(flux_units=flux_units, pixelsize=pixelsize,
+                         data=flux, stat=stat, header_0=header_0, header_1=header_1)
+
+        elif obj == MuseCube:
+            #modify header for wcs
+            return MuseCube(flux_units=flux_units, pixelsize=pixelsize,
+                         data=flux, stat=stat, header_0=header_0, header_1=header_1)
 
 
     def get_image(self, wv_input, fitsname='new_collapsed_cube.fits', type='sum', n_figure=2, save=False, stat=False,
