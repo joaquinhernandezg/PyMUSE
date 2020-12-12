@@ -49,6 +49,44 @@ class TestIter(unittest.TestCase):
         self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
 
+class TestAritmetic(unittest.TestCase):
+    def setUp(self):
+        self.filename = "minicube.fits"
+        self.cube = MuseCube(self.filename)
+
+    def test_add_two_images_returns_Image(self):
+        image1 = self.cube[0]
+        image2 = self.cube[1]
+        sum = image1 + image2
+        self.assertIsInstance(sum, Image)
+
+    def test_add_image_and_number_returns_Image(self):
+        image1 = self.cube[0]
+        sum = image1 + 1
+        self.assertIsInstance(sum, Image)
+
+    def test_sub_two_images_returns_Image(self):
+        image1 = self.cube[0]
+        image2 = self.cube[1]
+        sub = image1 - image2
+        self.assertIsInstance(sub, Image)
+
+    def test_sub_image_and_number_returns_Image(self):
+        image1 = self.cube[0]
+        sub = image1 - 1
+        self.assertIsInstance(sub, Image)
+
+    def test_mul_two_images_returns_Image(self):
+        image1 = self.cube[0]
+        image2 = self.cube[1]
+        mul = image1*image2
+        self.assertIsInstance(mul, Image)
+
+    def test_mul_image_and_number_returns_Image(self):
+        image1 = self.cube[0]
+        mul = image1*1
+        self.assertIsInstance(mul, Image)
+
 
 if __name__ == '__main__':
     unittest.main()

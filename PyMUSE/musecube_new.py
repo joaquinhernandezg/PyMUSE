@@ -231,6 +231,17 @@ class MuseCube:
 
         return matrix_flat
 
+    def copy(self):
+        return MuseCube(flux_units=self.flux_units, pixelsize=self.pixel_size, data=self.flux.copy(), stat=self.stat.copy(),
+                     header_1=self.header_1.copy(), header_0=self.header_0.copy(), input_wave_cal=self.wave_cal) #modify copy
+
+    def sum(self):
+        flux = self.flux.sum(axis=0)
+        stat = self.stat.sum(axis=0)
+        return Image(flux_units=self.flux_units, pixelsize=self.pixel_size, data=flux, stat=stat,
+                     header_1=self.header_1.copy(), header_0=self.header_0.copy()) #modify copy
+
+
     @property
     def wavelength(self):
         """

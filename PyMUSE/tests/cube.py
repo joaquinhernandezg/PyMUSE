@@ -66,6 +66,15 @@ class TestIter(unittest.TestCase):
             self.assertIsInstance(image, Image)
             return
 
+class TestSum(unittest.TestCase):
+    def setUp(self):
+        self.filename = "minicube.fits"
+        self.cube = MuseCube(self.filename)
+
+    def test_sum_works(self):
+        image = self.cube.sum()
+        self.assertIsInstance(image, Image)
+
 
 
 """

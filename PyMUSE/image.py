@@ -3,6 +3,7 @@ from astropy.io import fits
 import numpy as np
 from mpdaf.obj import WCS
 import copy
+import operator
 
 
 __all__ = ('Image')
@@ -58,36 +59,24 @@ class Image:
             return flux
 
     def __add__(self, other):
-        if (np.isreal(other) and not isinstance(other, np.ndarray) and not isinstance(other, Image)): #make it more pythonic
-            new_flux = self.flux + other
-            new_stat = self.stat + other
-        elif self.__is_operable(other):
-            new_flux = self.flux + other.flux
-            new_stat = self.stat + other.stat
-        else:
-            raise ValueError(f"Unknow type {type(other)}")
-
-        return self.__change_flux_and_stat(new_flux, new_stat)
+        return self.__operate(other, operator.add)
 
     def __sub__(self, other):
-        if (np.isreal(other) and not isinstance(other, np.ndarray) and not isinstance(other, Image)):
-            new_flux = self.flux - other
-            new_stat = self.stat - other
-        elif self.__is_operable(other):
-            new_flux = self.flux - other.flux
-            new_stat = self.stat - other.stat
-        else:
-            raise ValueError(f"Unknow type {type(other)}")
-
-        return self.__change_flux_and_stat(new_flux, new_stat)
+        return self.__operate(other, operator.sub)
 
     def __mul__(self, other):
+        return self.__operate(other, operator.mul)
+
+    def __truediv__(self, other):
+        return self.__operate(other, operator.truediv)
+
+    def __operate(self, other, func):
         if (np.isreal(other) and not isinstance(other, np.ndarray) and not isinstance(other, Image)):
-            new_flux = self.flux - other
-            new_stat = self.stat - other
+            new_flux = func(self.flux, other)
+            new_stat = func(self.stat, other)
         elif self.__is_operable(other):
-            new_flux = self.flux*other.flux
-            new_stat = self.stat*other.stat
+            new_flux = func(self.flux, other.flux)
+            new_stat = func(self.stat, other.stat)
         else:
             raise ValueError(f"Unknow type {type(other)}")
 
