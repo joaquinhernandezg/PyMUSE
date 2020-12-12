@@ -3,3 +3,7 @@
 *.gz
 *.zip
 *.ipynb
+PyMUSE.egg-info
+dist
+build
+.idea

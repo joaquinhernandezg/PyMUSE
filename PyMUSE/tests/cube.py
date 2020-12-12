@@ -30,6 +30,9 @@ class TestCubeFromFile(unittest.TestCase):
     def testCubeHasfluxhasPixel_size(self):
         self.assertTrue(hasattr(self.cube, "pixel_size"))
 
+
+
+
 class TestGetItem(unittest.TestCase):
     def setUp(self) -> None:
         self.filename = "minicube.fits"

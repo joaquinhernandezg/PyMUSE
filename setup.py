@@ -18,5 +18,5 @@ setup(
         'h5py',
         'pyregion',
         'numpy',
-        'mpdaf'
+        'mpdaf',
           ])

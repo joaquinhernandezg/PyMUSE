@@ -87,6 +87,25 @@ class MuseCube:
 
         print("MuseCube: Ready!")
 
+    @property
+    def flux(self):
+        return self._flux
+    @flux.setter
+    def flux(self, value):
+        if value.ndims != 3:
+            raise ValueError(f"Invalid flux dimensions, got {value.ndims}, expected 3")
+        self._flux = value
+
+    @property
+    def stat(self):
+        return self._stat
+
+    @stat.setter
+    def stat(self, value):
+        if value.ndims != 3:
+            raise ValueError(f"Invalid flux dimensions, got {value.ndims}, expected 3")
+        self._stat = value
+
     def __load_from_fits_file(self, filename):
         hdulist = fits.open(filename)
         self.header_0 = hdulist[0].header
