@@ -3,9 +3,10 @@ import os
 
 import numpy as np
 import astropy.units as u
+import astropy
 
 from astropy.io import fits
-from mpdaf.obj import WCS
+from mpdaf.obj import WCS, WaveCoord
 
 from .image import Image
 
@@ -67,23 +68,20 @@ class MuseCube:
         self.header_1 = header_1
         self.filename_white = filename_white
 
-        self._flux = data
-        self._stat = stat
+        self._flux = None
+        self._stat = None
 
         if filename_cube:
             self.__load_from_fits_file(filename_cube)
+        else:
+            self.flux = data
+            self.stat = stat
 
         if self.header_1:
             self.wcs = WCS(hdr=self.header_1)
+            self.wave = WaveCoord(hdr=self.header_1)
             # read pixelsize
-            # read flux_units
-
-        return
-        self.white_data = fits.open(self.filename_white)[1].data
-        self.hdulist_white = fits.open(self.filename_white)
-        self.hdulist_white_temp = fits.open(self.filename_white)
-        self.white_data = np.where(self.white_data < 0, 0, self.white_data)
-        self.white_data_orig = fits.open(self.filename_white)[1].data
+            # read flux_units BUNIT
 
         print("MuseCube: Ready!")
 
@@ -97,16 +95,15 @@ class MuseCube:
         :param value:
         :return Mone:
         """
+        # modify when value is None
         if not isinstance(value, np.ndarray) or value.ndim != 3:
-            raise ValueError(f"Invalid flux dimensions, got {value.ndims}, expected 3")
-        if self.stat is None:
+            raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected 3")
+        if self.flux is None:
             self._flux = value
         elif value.shape != self.stat.shape:
             raise ValueError(f"Stat and flux can not have different dimensions, try creating a copy instead")
         else:
             self._flux = value
-
-
 
     @property
     def stat(self):
@@ -119,11 +116,15 @@ class MuseCube:
         :param value:
         :return:
         """
+        #mofify when value is None
         if not isinstance(value, np.ndarray) or value.ndim != 3:
-            raise ValueError(f"Invalid flux dimensions, got {value.ndims}, expected 3")
-        if value.shape != self.flux.shape:
+            raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected 3")
+        if self.stat is None:
+            self._stat = value
+        elif value.shape != self.flux.shape:
             raise ValueError(f"Stat and flux can not have different dimensions, try creating a cube instead")
-        self._stat = value
+        else:
+            self._flux = value
 
     def __load_from_fits_file(self, filename):
         """
@@ -137,34 +138,8 @@ class MuseCube:
 
         self.flux = hdulist[1].data.astype(np.float64)
         self.stat = hdulist[2].data.astype(np.float64)
+        hdulist.close()
         return
-
-    def load_data(self):
-
-        if self.filename_white is None:
-            print("MuseCube: No white image given, creating one.")
-
-            w_data = self.create_white(save=False)
-            w_data = np.where(w_data == 0, np.nan, w_data)
-
-            w_header_0 = copy.deepcopy(self.header_0)
-            w_header_1 = copy.deepcopy(self.header_1)
-
-            # These loops remove the third dimension from the header's keywords. This is neccesary in order to
-            # create the white image and preserve the cube astrometry
-            w_header_0 = remove_dims_from_header(w_header_0)
-            w_header_1 = remove_dims_from_header(w_header_1)
-
-            w_header_1['WCSAXES'] = 2
-            # prepare the header
-            hdu = fits.HDUList()
-            hdu_0 = fits.PrimaryHDU(header=w_header_0)
-            hdu_1 = fits.ImageHDU(data=w_data, header=w_header_1)
-            hdu.append(hdu_0)
-            hdu.append(hdu_1)
-            hdu.writeto('new_white.fits', clobber=True)
-            self.filename_white = 'new_white.fits'
-            print("MuseCube: `new_white.fits` image saved to disk.")
 
     def create_white(self, new_white_fitsname='white_from_colapse.fits', stat=False, save=True):
         """
@@ -174,16 +149,18 @@ class MuseCube:
         :param Save. Default = True. If False, the new returned image will not be saved in the hard disk
         :return: white_image.
         """
-        wave = self.wavelength
-        n = len(wave)
-        wv_input = [[wave[0], wave[n - 1]]]
-        white_image = self.get_image(wv_input, fitsname=new_white_fitsname, stat=stat, save=save)
-        return white_image
+        white = self.sum(stat=stat)
+        return white
 
     def __getitem__(self, item):
         """
         modify for including wavelenght ranges in astropy units
         """
+        """ 
+        if isinstance(item, tuple):
+            print(item[0].start, item[0].stop)
+            if isinstance(item[0].start, astropy.units.Quantity) and isinstance(item[0].stop, astropy.units.Quantity):
+                print(item[0].start, item[0].stop)""" #implement unit detection
 
         flux = self.flux.__getitem__(item)
         stat = self.stat.__getitem__(item)
@@ -224,63 +201,27 @@ class MuseCube:
         elif obj == Spectrum:
             return Spectrum()
 
-    def get_image(self, wv_input, fitsname='new_collapsed_cube.fits', type='sum', n_figure=2, save=False, stat=False,
-                  maskfile=None, inverse_mask=True):
-        """
-        Function used to colapse a determined wavelength range in a sum or a median type
-        :param wv_input: tuple or list
-                         can be a list of wavelengths or a tuple that will represent a  range
-        :param fitsname: str
-                         The name of the fits that will contain the new image
-        :param type: str, possible values: 'sum' or 'median'
-                     The type of combination that will be done.
-        :param n_figure: int
-                         Figure to display the new image if it is saved
-        :param maskfile: str, Default = None
-                         Region file containing 1 more region to mask-in or mask-out
-        :param inverse_mask. Boolean, Default = True, If False, the mask will be reversed.
-        :return:
-        """
-        if maskfile:
-            r = pyregion.open(maskfile)
-            n = len(r)
-            masks = []
-            for i in range(n):
-                masks.append(self.region_2dmask(pyregion.ShapeList([r[i]])))
-
-            mask_final = masks[0]
-            for i in range(n):
-                mask_final = np.logical_and(mask_final, masks[i])
-            if inverse_mask:
-                mask_final = np.where(~mask_final, True, False)
-
-        sub_cube = self.sub_cube(wv_input, stat=stat)
-        if type == 'sum':
-            matrix_flat = np.nansum(sub_cube, axis=0)
-        elif type == 'median':
-            matrix_flat = np.nanmedian(sub_cube, axis=0)
-        else:
-            raise ValueError('Unknown type, please chose sum or median')
-        if maskfile:
-            matrix_flat = np.where(mask_final == 1, matrix_flat, np.nan)
-            if save:
-                self.__save2fits(fitsname, matrix_flat, type='white', n_figure=n_figure)
-
-        else:
-            if save:
-                self.__save2fits(fitsname, matrix_flat, type='white', n_figure=n_figure)
-
-        return matrix_flat
-
     def copy(self):
         return MuseCube(flux_units=self.flux_units, pixelsize=self.pixel_size, data=self.flux.copy(),
                         stat=self.stat.copy(),
                         header_1=self.header_1.copy(), header_0=self.header_0.copy(),
                         input_wave_cal=self.wave_cal)  # modify copy
 
-    def sum(self):
+    def sum(self, stat=False):
         flux = self.flux.sum(axis=0)
-        stat = self.stat.sum(axis=0)
+        if stat:
+            stat = self.stat.sum(axis=0)
+        else:
+            stat = None
+        return Image(flux_units=self.flux_units, pixelsize=self.pixel_size, data=flux, stat=stat,
+                     header_1=self.header_1.copy(), header_0=self.header_0.copy())  # modify copy
+
+    def median(self, stat=None):
+        flux = self.flux.median(axis=0)
+        if stat:
+            stat = self.stat.median(axis=0)
+        else:
+            stat = None
         return Image(flux_units=self.flux_units, pixelsize=self.pixel_size, data=flux, stat=stat,
                      header_1=self.header_1.copy(), header_0=self.header_0.copy())  # modify copy
 
@@ -292,11 +233,4 @@ class MuseCube:
         :return: w: array[]
                  array which contain an evenly sampled wavelength range
         """
-        dw = self.header_1['CD3_3']
-        w_ini = self.header_1['CRVAL3']
-        N = self.header_1['NAXIS3']
-        w_fin = w_ini + (N - 1) * dw
-        # w_aux = w_ini + dw*np.arange(0, N) #todo: check whether w_aux and w are the same
-        w = np.linspace(w_ini, w_fin, N)
-        # print('wavelength in range ' + str(w[0]) + ' to ' + str(w[len(w) - 1]) + ' and dw = ' + str(dw))
-        return w
+        return self.wave.coord()

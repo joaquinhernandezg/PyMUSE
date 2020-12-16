@@ -29,7 +29,7 @@ class TestCubeFromFile(unittest.TestCase):
         self.assertTrue(hasattr(self.image, "pixel_size"))
 
 class TestGetItem(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
         self.image = self.cube[0]

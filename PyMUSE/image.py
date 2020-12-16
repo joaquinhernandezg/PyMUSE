@@ -23,6 +23,9 @@ class Image:
         self.header_0 = header_0
         self.header_1 = header_1
 
+        self._flux = None
+        self._stat = None
+
         if filename:
             self.__load_from_fits_file(filename)
         else:
@@ -40,9 +43,14 @@ class Image:
 
     @flux.setter
     def flux(self, value):
-        if value.ndim != 2:
-            raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected 3")
-        self._flux = value
+        if not isinstance(value, np.ndarray) or value.ndim != 2:
+            raise ValueError(f"Invalid flux shapes, got {value.ndim}, expected 2")
+        if self.flux is None:
+            self._flux = value
+        elif value.shape != self.stat.shape:
+            raise ValueError(f"Stat and flux can not have different shapes, try creating a copy instead")
+        else:
+            self._flux = value
 
     @property
     def stat(self):
@@ -50,9 +58,19 @@ class Image:
 
     @stat.setter
     def stat(self, value):
+        if value is None:
+            self._stat = None
+            return
+        if not isinstance(value, np.ndarray) and value is not None:
+            raise ValueError(f"Invalid flux shape, got {value.ndim}, expected 3")
         if value.ndim != 2:
-            raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected 3")
-        self._stat = value
+            raise ValueError(f"Invalid flux shape, got {value.ndim}, expected 3")
+        if self.stat is None:
+            self._stat = value
+        elif value.shape != self.flux.shape:
+            raise ValueError(f"Stat and flux can not have different shapes, try creating a cube instead")
+        else:
+            self._flux = value
 
     def __load_from_fits_file(self, filename):
         hdulist = fits.open(filename)

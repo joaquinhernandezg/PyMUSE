@@ -2,6 +2,7 @@ import unittest
 from PyMUSE.musecube_new import MuseCube
 from PyMUSE.image import Image
 import numpy as np
+import astropy.units as u
 import os
 import shutil
 
@@ -159,6 +160,14 @@ class TestGetItem(unittest.TestCase):
         # corregir en la clase
         spec= self.cube[:, 2, 2]
         self.assertIsInstance(image, Image)
+
+    def test_slice_with_wavelenght_units(self):
+        return
+        spectral_range = self.cube.wave.get_range()
+
+        subimage = self.cube[spectral_range[0]:spectral_range[1], 1:3, 1:23]
+        raise  subimage
+
 
 
 class TestIter(unittest.TestCase):
