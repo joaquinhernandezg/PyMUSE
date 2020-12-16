@@ -9,21 +9,20 @@ from mpdaf.obj import WCS
 
 from .image import Image
 
-
-
 __all__ = ('MuseCube')
+
 
 def remove_dims_from_header(header, dim="3"):
     # no es buena idea hacer esto si se van a hacer espectros
     header = copy.deepcopy(header)
     l = []
-    
+
     for i in header.keys():
         if dim in i:
             l.append(i)
     for i in l:
         del header[i]
-        
+
     return header
 
 
@@ -34,7 +33,8 @@ class MuseCube:
     """
 
     def __init__(self, filename_cube=None, filename_white=None, pixelsize=0.2 * u.arcsec,
-                 flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, input_wave_cal='air', data=None, stat=None, header_0=None, header_1=None):
+                 flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, input_wave_cal='air', data=None, stat=None,
+                 header_0=None, header_1=None):
         """
         Parameters
         ----------
@@ -57,7 +57,7 @@ class MuseCube:
         # init
         if input_wave_cal not in ['air', 'vac']:
             raise Warning('input_wave_cal and output_wave_cal should be either "air" or "vac"')
-        #agregar mas verificacion de parametros
+        # agregar mas verificacion de parametros
 
         self.wave_cal = input_wave_cal
         self.flux_units = flux_units
@@ -67,16 +67,16 @@ class MuseCube:
         self.header_1 = header_1
         self.filename_white = filename_white
 
+        self._flux = data
+        self._stat = stat
+
         if filename_cube:
             self.__load_from_fits_file(filename_cube)
-        else:
-            self.flux = data
-            self.stat = stat
 
         if self.header_1:
             self.wcs = WCS(hdr=self.header_1)
-            #read pixelsize
-            #read flux_units
+            # read pixelsize
+            # read flux_units
 
         return
         self.white_data = fits.open(self.filename_white)[1].data
@@ -90,11 +90,23 @@ class MuseCube:
     @property
     def flux(self):
         return self._flux
+
     @flux.setter
     def flux(self, value):
-        if value.ndims != 3:
+        """
+        :param value:
+        :return Mone:
+        """
+        if not isinstance(value, np.ndarray) or value.ndim != 3:
             raise ValueError(f"Invalid flux dimensions, got {value.ndims}, expected 3")
-        self._flux = value
+        if self.stat is None:
+            self._flux = value
+        elif value.shape != self.stat.shape:
+            raise ValueError(f"Stat and flux can not have different dimensions, try creating a copy instead")
+        else:
+            self._flux = value
+
+
 
     @property
     def stat(self):
@@ -102,11 +114,23 @@ class MuseCube:
 
     @stat.setter
     def stat(self, value):
-        if value.ndims != 3:
+        """
+
+        :param value:
+        :return:
+        """
+        if not isinstance(value, np.ndarray) or value.ndim != 3:
             raise ValueError(f"Invalid flux dimensions, got {value.ndims}, expected 3")
+        if value.shape != self.flux.shape:
+            raise ValueError(f"Stat and flux can not have different dimensions, try creating a cube instead")
         self._stat = value
 
     def __load_from_fits_file(self, filename):
+        """
+
+        :param filename: string
+        :return:
+        """
         hdulist = fits.open(filename)
         self.header_0 = hdulist[0].header
         self.header_1 = hdulist[1].header
@@ -121,7 +145,7 @@ class MuseCube:
             print("MuseCube: No white image given, creating one.")
 
             w_data = self.create_white(save=False)
-            w_data = np.where(w_data == 0,np.nan, w_data)
+            w_data = np.where(w_data == 0, np.nan, w_data)
 
             w_header_0 = copy.deepcopy(self.header_0)
             w_header_1 = copy.deepcopy(self.header_1)
@@ -130,7 +154,7 @@ class MuseCube:
             # create the white image and preserve the cube astrometry
             w_header_0 = remove_dims_from_header(w_header_0)
             w_header_1 = remove_dims_from_header(w_header_1)
-            
+
             w_header_1['WCSAXES'] = 2
             # prepare the header
             hdu = fits.HDUList()
@@ -166,7 +190,7 @@ class MuseCube:
 
         if isinstance(flux, np.ndarray):
             if flux.ndim == 3:
-                #should modify headers
+                # should modify headers
                 return self.__to_obj(MuseCube, flux=flux, stat=stat)
             elif flux.ndim == 2:
                 # should modify headers
@@ -193,14 +217,12 @@ class MuseCube:
                          data=flux, stat=stat, header_0=header_0, header_1=header_1)
 
         elif obj == MuseCube:
-            #modify header for wcs
+            # modify header for wcs
             return MuseCube(flux_units=flux_units, pixelsize=pixelsize,
-                         data=flux, stat=stat, header_0=header_0, header_1=header_1)
+                            data=flux, stat=stat, header_0=header_0, header_1=header_1)
 
         elif obj == Spectrum:
             return Spectrum()
-
-
 
     def get_image(self, wv_input, fitsname='new_collapsed_cube.fits', type='sum', n_figure=2, save=False, stat=False,
                   maskfile=None, inverse_mask=True):
@@ -251,15 +273,16 @@ class MuseCube:
         return matrix_flat
 
     def copy(self):
-        return MuseCube(flux_units=self.flux_units, pixelsize=self.pixel_size, data=self.flux.copy(), stat=self.stat.copy(),
-                     header_1=self.header_1.copy(), header_0=self.header_0.copy(), input_wave_cal=self.wave_cal) #modify copy
+        return MuseCube(flux_units=self.flux_units, pixelsize=self.pixel_size, data=self.flux.copy(),
+                        stat=self.stat.copy(),
+                        header_1=self.header_1.copy(), header_0=self.header_0.copy(),
+                        input_wave_cal=self.wave_cal)  # modify copy
 
     def sum(self):
         flux = self.flux.sum(axis=0)
         stat = self.stat.sum(axis=0)
         return Image(flux_units=self.flux_units, pixelsize=self.pixel_size, data=flux, stat=stat,
-                     header_1=self.header_1.copy(), header_0=self.header_0.copy()) #modify copy
-
+                     header_1=self.header_1.copy(), header_0=self.header_0.copy())  # modify copy
 
     @property
     def wavelength(self):
@@ -277,4 +300,3 @@ class MuseCube:
         w = np.linspace(w_ini, w_fin, N)
         # print('wavelength in range ' + str(w[0]) + ' to ' + str(w[len(w) - 1]) + ' and dw = ' + str(dw))
         return w
-

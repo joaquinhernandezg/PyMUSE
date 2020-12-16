@@ -40,8 +40,8 @@ class Image:
 
     @flux.setter
     def flux(self, value):
-        if value.ndims != 2:
-            raise ValueError(f"Invalid flux dimensions, got {value.ndims}, expected 3")
+        if value.ndim != 2:
+            raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected 3")
         self._flux = value
 
     @property
@@ -50,8 +50,8 @@ class Image:
 
     @stat.setter
     def stat(self, value):
-        if value.ndims != 2:
-            raise ValueError(f"Invalid flux dimensions, got {value.ndims}, expected 3")
+        if value.ndim != 2:
+            raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected 3")
         self._stat = value
 
     def __load_from_fits_file(self, filename):
