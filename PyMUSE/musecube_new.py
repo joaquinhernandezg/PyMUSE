@@ -35,7 +35,7 @@ class MuseCube:
 
     def __init__(self, filename_cube=None, filename_white=None, pixelsize=0.2 * u.arcsec,
                  flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, input_wave_cal='air', data=None, stat=None,
-                 header_0=None, header_1=None):
+                 header_0=None, header_1=None, header_2=None):
         """
         Parameters
         ----------
@@ -66,6 +66,7 @@ class MuseCube:
 
         self.header_0 = header_0
         self.header_1 = header_1
+
         self.filename_white = filename_white
 
         self._flux = None
@@ -73,6 +74,7 @@ class MuseCube:
 
         if filename_cube:
             self.__load_from_fits_file(filename_cube)
+
         else:
             self.flux = data
             self.stat = stat
@@ -134,7 +136,7 @@ class MuseCube:
         """
         hdulist = fits.open(filename)
         self.header_0 = hdulist[0].header
-        self.header_1 = hdulist[1].header
+        self.header_1 = hdulist[1].header #header 1 is exactly equasl to 2, only changes name
 
         self.flux = hdulist[1].data.astype(np.float64)
         self.stat = hdulist[2].data.astype(np.float64)
@@ -155,6 +157,7 @@ class MuseCube:
     def __getitem__(self, item):
         """
         modify for including wavelenght ranges in astropy units
+        modify header when cutting
         """
         """ 
         if isinstance(item, tuple):
@@ -234,3 +237,15 @@ class MuseCube:
                  array which contain an evenly sampled wavelength range
         """
         return self.wave.coord()
+
+    def write_to_fits(self, filename, overwrite=False):
+        # verify existence of stat
+        hdr_0 = fits.PrimaryHDU(header=self.header_0)
+        hdr_1 = fits.ImageHDU(header=self.header_1, data=self.flux, name="DATA")
+        hdr_2 = fits.ImageHDU(header=self.header_1, data=self.stat, name="STAT")
+
+        hdulist = fits.HDUList([hdr_0, hdr_1, hdr_2])
+        hdulist.writeto(filename, overwrite=overwrite)
+
+
+

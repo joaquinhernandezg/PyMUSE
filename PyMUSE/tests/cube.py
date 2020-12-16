@@ -82,10 +82,13 @@ class TestMethods(unittest.TestCase):
     def setUp(self):
         self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
-        if os.path.exists("temp"):
-            shutil.rmtree('temp')
-        os.mkdir("temp")
-        self.white_filename = os.path.join("temp", "white.fits")
+
+        self.temp_path = os.path.join("/home/joaquin", "temp")
+        if os.path.exists(self.temp_path):
+            shutil.rmtree(self.temp_path)
+        os.mkdir(self.temp_path)
+
+        self.white_filename = os.path.join(self.temp_path, "white.fits")
 
     def test_create_white_image_returns_Image(self):
         white = self.cube.create_white()
@@ -104,8 +107,13 @@ class TestMethods(unittest.TestCase):
     def test___to_obj_creates_spectrum_with_cube_information(self):
         pass
 
+    def test_write_fits(self):
+        new_filename = os.path.join(self.temp_path, "cube_2.fits")
+        self.cube.write_to_fits(new_filename, overwrite=True)
+        self.assertTrue(os.path.exists(new_filename))
+
     def tearDown(self):
-        shutil.rmtree('temp')
+        #shutil.rmtree(self.temp_path)
         pass
 
 class TestCubeCopy(unittest.TestCase):
