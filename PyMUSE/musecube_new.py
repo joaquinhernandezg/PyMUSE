@@ -9,6 +9,7 @@ from astropy.io import fits
 from mpdaf.obj import WCS, WaveCoord
 
 from .image import Image
+from .base import Base
 
 __all__ = ('MuseCube')
 
@@ -27,7 +28,7 @@ def remove_dims_from_header(header, dim="3"):
     return header
 
 
-class MuseCube:
+class MuseCube(Base):
     """
     Class to handle VLT/MUSE data
 
@@ -35,7 +36,7 @@ class MuseCube:
 
     def __init__(self, filename_cube=None, filename_white=None, pixelsize=0.2 * u.arcsec,
                  flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, input_wave_cal='air', data=None, stat=None,
-                 header_0=None, header_1=None, header_2=None):
+                 header_0=None, header_1=None):
         """
         Parameters
         ----------
@@ -55,37 +56,26 @@ class MuseCube:
 
         """
 
+        super().__init__(filename_cube, data, stat, header_0, header_1)
         # init
+        self.flux_units = flux_units
         if input_wave_cal not in ['air', 'vac']:
             raise Warning('input_wave_cal and output_wave_cal should be either "air" or "vac"')
         # agregar mas verificacion de parametros
 
         self.wave_cal = input_wave_cal
-        self.flux_units = flux_units
         self.pixel_size = pixelsize
 
-        self.header_0 = header_0
-        self.header_1 = header_1
+
+
 
         self.filename_white = filename_white
 
-        self._flux = None
-        self._stat = None
-
-        if filename_cube:
-            self.__load_from_fits_file(filename_cube)
-
-        else:
-            self.flux = data
-            self.stat = stat
-
-        if self.header_1:
-            self.wcs = WCS(hdr=self.header_1)
-            self.wave = WaveCoord(hdr=self.header_1)
-            # read pixelsize
-            # read flux_units BUNIT
-
         print("MuseCube: Ready!")
+
+    def _Base__set_coordinates_from_header(self):
+        self.wcs = WCS(hdr=self.header_1)
+        self.wave = WaveCoord(hdr=self.header_1)
 
     @property
     def flux(self):
@@ -127,21 +117,6 @@ class MuseCube:
             raise ValueError(f"Stat and flux can not have different dimensions, try creating a cube instead")
         else:
             self._flux = value
-
-    def __load_from_fits_file(self, filename):
-        """
-
-        :param filename: string
-        :return:
-        """
-        hdulist = fits.open(filename)
-        self.header_0 = hdulist[0].header
-        self.header_1 = hdulist[1].header #header 1 is exactly equasl to 2, only changes name
-
-        self.flux = hdulist[1].data.astype(np.float64)
-        self.stat = hdulist[2].data.astype(np.float64)
-        hdulist.close()
-        return
 
     def create_white(self, new_white_fitsname='white_from_colapse.fits', stat=False, save=True):
         """
