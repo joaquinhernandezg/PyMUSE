@@ -147,6 +147,15 @@ class Image:
         new_image.stat = new_stat
         return new_image
 
+    def write_to_fits(self, filename, overwrite=False):
+        # verify existence of stat
+        hdr_0 = fits.PrimaryHDU(header=self.header_0)
+        hdr_1 = fits.ImageHDU(header=self.header_1, data=self.flux, name="DATA")
+        hdr_2 = fits.ImageHDU(header=self.header_1, data=self.stat, name="STAT")
+
+        hdulist = fits.HDUList([hdr_0, hdr_1, hdr_2])
+        hdulist.writeto(filename, overwrite=overwrite)
+
 
 
 
