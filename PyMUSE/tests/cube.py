@@ -36,6 +36,12 @@ class TestCubeFromFile(unittest.TestCase):
     def testCubeHasfluxhasFlux_units(self):
         self.assertTrue(hasattr(self.cube, "flux_units"))
 
+    def testCubeHasfluxhasWCS(self):
+        self.assertTrue(hasattr(self.cube, "wcs"))
+
+    def testCubeHasfluxhasWAVE(self):
+        self.assertTrue(hasattr(self.cube, "wave"))
+
     def testFluxUnitsIsNotNone(self):
         self.assertTrue(self.cube.flux_units)
 

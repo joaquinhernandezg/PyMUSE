@@ -1,5 +1,6 @@
 import copy
 import os
+import logging
 
 import numpy as np
 import astropy.units as u
@@ -12,6 +13,7 @@ from .image import Image
 from .base import Base
 
 __all__ = ('MuseCube')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s INFO: %(message)s", datefmt="%d/%m/%Y %I:%M:%S %p")
 
 
 def remove_dims_from_header(header, dim="3"):
@@ -68,7 +70,7 @@ class MuseCube(Base):
 
         self.filename_white = filename_white
 
-        print("MuseCube: Ready!")
+        logging.info("MuseCube Ready!")
 
     def _Base__set_coordinates_from_header(self):
         """
@@ -84,11 +86,13 @@ class MuseCube(Base):
         Function that collapses all wavelengths available to produce a new white image
         :param new_white_fitsname: Name of the new image
         :param stat. Default = False. If True, the new white image will be done using the stat extension of the cube.
-        :param Save. Default = True. If False, the new returned image will not be saved in the hard disk
+        :param Save. Default = True. If False, the new returned image will not be saved in the disk
         :return: white_image.
         """
         white = self.sum(stat=stat)
+        logging.info("Creating White Image!")
         if new_white_fitsname:
+            logging.info(f"Writing White Image to {new_white_fitsname}")
             white.write_to_fits(new_white_fitsname)
         return white
 
@@ -131,6 +135,7 @@ class MuseCube(Base):
         Makes full copy of the cube
         :return: MuseCube
         """
+        logging.info("Copying cube!")
         return MuseCube(flux_units=self.flux_units, pixelsize=self.pixel_size, data=self.flux.copy(),
                         stat=self.stat.copy(),
                         header_1=self.header_1.copy(), header_0=self.header_0.copy(),
