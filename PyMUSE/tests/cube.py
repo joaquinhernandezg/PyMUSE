@@ -8,6 +8,9 @@ import shutil
 
 
 class TestCubeFromFile(unittest.TestCase):
+    """
+    Tests presence of attributes when reading from file
+    """
     def setUp(self):
         self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
@@ -43,6 +46,9 @@ class TestCubeFromFile(unittest.TestCase):
         self.assertTrue(self.cube.pixel_size)
 
 class TestModifyAttributesOnTheRun(unittest.TestCase):
+    """
+    Test changesa of attributes on the run
+    """
     def setUp(self):
         self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
@@ -52,41 +58,43 @@ class TestModifyAttributesOnTheRun(unittest.TestCase):
         shape_flux[0] += 1
         new_flux = np.random.normal(size=shape_flux)
         with self.assertRaises(ValueError):
-            self.cube = new_flux
+            self.cube.flux = new_flux
 
     def test_cant_set_stat_with_different_dimensions_as_flux(self):
         shape_flux = list(self.cube.flux.shape)
         shape_flux[0] += 1
         new_stat = np.random.normal(size=shape_flux)
         with self.assertRaises(ValueError):
-            self.stat = new_stat
+            self.cube.stat = new_stat
 
-    def test_cant_set_stat_with_different_dimensions_as_flux(self):
+    def test_cant_set_stat_with_different_shape_as_flux(self):
         shape_flux = list(self.cube.flux.shape)
-        shape_flux[0] += 1
-        new_stat = np.random.normal(size=shape_flux)
+        shape_flux[0] += 4
+        new_stat = np.random.normal(size=tuple(shape_flux))
         with self.assertRaises(ValueError):
-            self.stat = new_stat
+            self.cube.stat = new_stat
 
     def test_cant_set_numbers_as_flux(self):
-        new_flux = np.random.randint(-100, 100)
+        new_flux = np.random.randint(-100, 100, 1)[0]
         with self.assertRaises(ValueError):
-            self.flux = new_flux
+            self.cube.flux = new_flux
 
     def test_cant_set_numbers_as_stat(self):
-        new_stat = np.random.randint(-100, 100)
+        new_stat = np.random.randint(-100, 100, 1)[0]
         with self.assertRaises(ValueError):
-            self.flux = new_stat
+            self.cube.flux = new_stat
 
 class TestMethods(unittest.TestCase):
+    """
+    Test generic methods
+    """
     def setUp(self):
         self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
 
-        self.temp_path = os.path.join("/home/joaquin", "temp")
-        if os.path.exists(self.temp_path):
-            shutil.rmtree(self.temp_path)
-        os.mkdir(self.temp_path)
+        self.temp_path = os.path.join(os.path.dirname(__file__), "temp")
+
+        os.makedirs(self.temp_path)
 
         self.white_filename = os.path.join(self.temp_path, "white.fits")
 
@@ -113,10 +121,13 @@ class TestMethods(unittest.TestCase):
         self.assertTrue(os.path.exists(new_filename))
 
     def tearDown(self):
-        #shutil.rmtree(self.temp_path)
+        shutil.rmtree(self.temp_path)
         pass
 
 class TestCubeCopy(unittest.TestCase):
+    """
+    Test copy method
+    """
     def setUp(self):
         self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
@@ -150,17 +161,32 @@ class TestGetItem(unittest.TestCase):
         self.cube = MuseCube(self.filename)
 
     def test_get_item_slice_return_a_value(self):
-        value = self.cube[0, 0, 0]
+        """
+        cube[int, int, int] returns a number, the value of the flux in the corresponding voxel
+        """
+        x = np.random.randint(0, self.cube.shape[2], 1)[0]
+        y = np.random.randint(0, self.cube.shape[1], 1)[0]
+        z = np.random.randint(0, self.cube.shape[0], 1)[0]
+        value = self.cube[z, y, x]
         self.assertIsInstance(value, np.float)
 
     def test_slice_return_a_cube(self):
-        # corregir en la clase
+        """
+        cube[:, :, :] returns a MuseCube object
+        """
         subcube = self.cube[:, :, :]
         self.assertIsInstance(subcube, MuseCube)
 
     def test_slice_return_an_image(self):
+        """
+        cube[int, int:int, int:int] with appropiated values returns an Image object
+        """
         # corregir en la clase
-        image = self.cube[0, 0:2, 0:2]
+
+        x_min, x_max = np.random.randint(0, self.cube.shape[2], 2)
+        y_min, y_max = np.random.randint(0, self.cube.shape[1], 2)
+        z  = np.random.randint(0, self.cube.shape[0], 1)[0]
+        image = self.cube[z, x_min:x_max, x_min:x_max]
         self.assertIsInstance(image, Image)
 
     def test_slice_return_an_Spectrum(self):
@@ -198,23 +224,6 @@ class TestSum(unittest.TestCase):
         self.assertIsInstance(image, Image)
 
 
-"""
-class TestOtherThing(unittest.TestCase):
-    def setUp(self) -> None:
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
-    def test_filename_cube_equals_filename(self):
-        self.assertEqual(self.cube.filename,self.filename)
-
-    def test_get_item_slice_return_a_value(self):
-        value = self.cube[0, 0, 0]
-        self.assertIsInstance(value, np.float)
-
-    def test_slice_return_a_cube(self):
-        # corregir en la clase
-        cls = self.cube[:, :, :]
-        self.assertIsInstance(cls, MuseCube)
-"""
 
 if __name__ == '__main__':
     unittest.main()

@@ -30,6 +30,14 @@ class Base(ABC):
         pass
 
     @property
+    def shape(self):
+        """
+        :param self:
+        :return:
+        """
+        return self.flux.shape
+
+    @property
     def flux(self):
         return self._flux
 
@@ -63,12 +71,10 @@ class Base(ABC):
         # mofify when value is None
         if not isinstance(value, np.ndarray) or value.ndim != self.n_dims:
             raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected {self.n_dims}")
-        if self.stat is None:
-            self._stat = value
         elif value.shape != self.flux.shape:
             raise ValueError(f"Stat and flux can not have different dimensions, try creating a copy instead")
         else:
-            self._flux = value
+            self._stat = value
 
     def __load_from_fits_file(self, filename):
         """

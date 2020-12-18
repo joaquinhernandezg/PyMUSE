@@ -88,6 +88,8 @@ class MuseCube(Base):
         :return: white_image.
         """
         white = self.sum(stat=stat)
+        if new_white_fitsname:
+            white.write_to_fits(new_white_fitsname)
         return white
 
     def __iter__(self):
