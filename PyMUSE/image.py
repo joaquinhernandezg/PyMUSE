@@ -4,11 +4,13 @@ import numpy as np
 from mpdaf.obj import WCS
 import copy
 import operator
+from .base import Base
 
 
 __all__ = ('Image')
 
-class Image:
+class Image(Base):
+    n_dims = 2
     def __init__(self, filename=None, pixelsize=0.2*u.arcsec,  flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, data=None, stat=None,
                  header_0=None, header_1=None):
 
@@ -17,25 +19,13 @@ class Image:
         # verificar headers son astropy headers
         # verificar pixel size and flux units are apropiated astropy units
         # verificar data y stat son np array
+        
+        super(Image, self).__init__(filename, data, stat, header_0, header_1)
         self.flux_units = flux_units #shoud be read_from_file
         self.pixel_size = pixelsize #should be read from file
 
-        self.header_0 = header_0
-        self.header_1 = header_1
-
-        self._flux = None
-        self._stat = None
-
-        if filename:
-            self.__load_from_fits_file(filename)
-        else:
-            self.flux = data
-            self.stat = stat
-
-        if self.header_1:
-            self.wcs = WCS(hdr=self.header_1)
-            #read pixelsize
-            #read flux_units
+    def _Base__set_coordinates_from_header(self):
+        self.wcs = WCS(hdr=self.header_1)
 
     @property
     def flux(self):
@@ -127,7 +117,7 @@ class Image:
             raise ValueError
         return True
 
-    def __to_obj(self, obj, flux, stat=None):
+    def _to_obj(self, obj, flux, stat=None):
         pixelsize = self.pixel_size
         flux_units = self.flux_units
         header_0 = self.header_0
@@ -147,14 +137,6 @@ class Image:
         new_image.stat = new_stat
         return new_image
 
-    def write_to_fits(self, filename, overwrite=False):
-        # verify existence of stat
-        hdr_0 = fits.PrimaryHDU(header=self.header_0)
-        hdr_1 = fits.ImageHDU(header=self.header_1, data=self.flux, name="DATA")
-        hdr_2 = fits.ImageHDU(header=self.header_1, data=self.stat, name="STAT")
-
-        hdulist = fits.HDUList([hdr_0, hdr_1, hdr_2])
-        hdulist.writeto(filename, overwrite=overwrite)
 
 
 

@@ -33,6 +33,7 @@ class MuseCube(Base):
     Class to handle VLT/MUSE data
 
     """
+    n_dims = 3
 
     def __init__(self, filename_cube=None, filename_white=None, pixelsize=0.2 * u.arcsec,
                  flux_units=1E-20 * u.erg / u.s / u.cm ** 2 / u.angstrom, input_wave_cal='air', data=None, stat=None,
@@ -55,8 +56,7 @@ class MuseCube(Base):
         output_wave_cal: Wavelength calibration of the spectra extractied with this package
 
         """
-
-        super().__init__(filename_cube, data, stat, header_0, header_1)
+        super(MuseCube, self).__init__(filename_cube, data, stat, header_0, header_1)
         # init
         self.flux_units = flux_units
         if input_wave_cal not in ['air', 'vac']:
@@ -66,9 +66,6 @@ class MuseCube(Base):
         self.wave_cal = input_wave_cal
         self.pixel_size = pixelsize
 
-
-
-
         self.filename_white = filename_white
 
         print("MuseCube: Ready!")
@@ -77,46 +74,6 @@ class MuseCube(Base):
         self.wcs = WCS(hdr=self.header_1)
         self.wave = WaveCoord(hdr=self.header_1)
 
-    @property
-    def flux(self):
-        return self._flux
-
-    @flux.setter
-    def flux(self, value):
-        """
-        :param value:
-        :return Mone:
-        """
-        # modify when value is None
-        if not isinstance(value, np.ndarray) or value.ndim != 3:
-            raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected 3")
-        if self.flux is None:
-            self._flux = value
-        elif value.shape != self.stat.shape:
-            raise ValueError(f"Stat and flux can not have different dimensions, try creating a copy instead")
-        else:
-            self._flux = value
-
-    @property
-    def stat(self):
-        return self._stat
-
-    @stat.setter
-    def stat(self, value):
-        """
-
-        :param value:
-        :return:
-        """
-        #mofify when value is None
-        if not isinstance(value, np.ndarray) or value.ndim != 3:
-            raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected 3")
-        if self.stat is None:
-            self._stat = value
-        elif value.shape != self.flux.shape:
-            raise ValueError(f"Stat and flux can not have different dimensions, try creating a cube instead")
-        else:
-            self._flux = value
 
     def create_white(self, new_white_fitsname='white_from_colapse.fits', stat=False, save=True):
         """
@@ -129,16 +86,21 @@ class MuseCube(Base):
         white = self.sum(stat=stat)
         return white
 
+    def __iter__(self):
+        for i in range(self.flux.shape[0]):
+            yield self[i, :, :]
+
     def __getitem__(self, item):
+
         """
-        modify for including wavelenght ranges in astropy units
-        modify header when cutting
-        """
+                modify for including wavelenght ranges in astropy units
+                modify header when cutting
+                """
         """ 
         if isinstance(item, tuple):
             print(item[0].start, item[0].stop)
             if isinstance(item[0].start, astropy.units.Quantity) and isinstance(item[0].stop, astropy.units.Quantity):
-                print(item[0].start, item[0].stop)""" #implement unit detection
+                print(item[0].start, item[0].stop)"""  # implement unit detection
 
         flux = self.flux.__getitem__(item)
         stat = self.stat.__getitem__(item)
@@ -146,39 +108,14 @@ class MuseCube(Base):
         if isinstance(flux, np.ndarray):
             if flux.ndim == 3:
                 # should modify headers
-                return self.__to_obj(MuseCube, flux=flux, stat=stat)
+                return self._to_obj(MuseCube, flux=flux, stat=stat)
             elif flux.ndim == 2:
                 # should modify headers
-                return self.__to_obj(Image, flux=flux, stat=stat)
+                return self._to_obj(Image, flux=flux, stat=stat)
             elif flux.ndim == 1:
                 return Spectrum
         else:
             return flux
-
-    def __iter__(self):
-        for i in range(self.flux.shape[0]):
-            yield self[i, :, :]
-
-    def __to_obj(self, obj, flux, stat=None):
-        pixelsize = self.pixel_size
-        flux_units = self.flux_units
-        header_0 = self.header_0
-        header_1 = self.header_1
-
-        if obj == Image:
-            #change header
-            header_0 = remove_dims_from_header(header_0)
-            header_1 = remove_dims_from_header(header_1)
-            return Image(flux_units=flux_units, pixelsize=pixelsize,
-                         data=flux, stat=stat, header_0=header_0, header_1=header_1)
-
-        elif obj == MuseCube:
-            # modify header for wcs
-            return MuseCube(flux_units=flux_units, pixelsize=pixelsize,
-                            data=flux, stat=stat, header_0=header_0, header_1=header_1)
-
-        elif obj == Spectrum:
-            return Spectrum()
 
     def copy(self):
         return MuseCube(flux_units=self.flux_units, pixelsize=self.pixel_size, data=self.flux.copy(),
@@ -214,14 +151,22 @@ class MuseCube(Base):
         """
         return self.wave.coord()
 
-    def write_to_fits(self, filename, overwrite=False):
-        # verify existence of stat
-        hdr_0 = fits.PrimaryHDU(header=self.header_0)
-        hdr_1 = fits.ImageHDU(header=self.header_1, data=self.flux, name="DATA")
-        hdr_2 = fits.ImageHDU(header=self.header_1, data=self.stat, name="STAT")
+    def _to_obj(self, obj, flux, stat=None):
 
-        hdulist = fits.HDUList([hdr_0, hdr_1, hdr_2])
-        hdulist.writeto(filename, overwrite=overwrite)
+        header_0 = self.header_0
+        header_1 = self.header_1
+
+        if obj == Image:
+            # change header
+            return Image(data=flux, stat=stat, header_0=header_0, header_1=header_1)
+
+        elif obj == MuseCube:
+
+            return MuseCube(data=flux, stat=stat, header_0=header_0, header_1=header_1)
+
+        elif obj == Spectrum:
+            return Spectrum()
+
 
 
 
