@@ -5,6 +5,7 @@ import shutil
 from abc import ABC, abstractmethod
 from astropy.io import fits
 
+
 class Base(ABC):
     n_dims = None
 

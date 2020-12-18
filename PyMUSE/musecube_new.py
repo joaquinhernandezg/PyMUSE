@@ -57,20 +57,24 @@ class MuseCube(Base):
 
         """
         super(MuseCube, self).__init__(filename_cube, data, stat, header_0, header_1)
-        # init
-        self.flux_units = flux_units
+
         if input_wave_cal not in ['air', 'vac']:
             raise Warning('input_wave_cal and output_wave_cal should be either "air" or "vac"')
         # agregar mas verificacion de parametros
 
         self.wave_cal = input_wave_cal
         self.pixel_size = pixelsize
+        self.flux_units = flux_units
 
         self.filename_white = filename_white
 
         print("MuseCube: Ready!")
 
     def _Base__set_coordinates_from_header(self):
+        """
+        Sets de WCS for x, y spatial coordinates and another for the z spectral coordinate
+        :return: None
+        """
         self.wcs = WCS(hdr=self.header_1)
         self.wave = WaveCoord(hdr=self.header_1)
 
@@ -93,9 +97,9 @@ class MuseCube(Base):
     def __getitem__(self, item):
 
         """
-                modify for including wavelenght ranges in astropy units
-                modify header when cutting
-                """
+        modify for including wavelenght ranges in astropy units
+        modify header when cutting
+        """
         """ 
         if isinstance(item, tuple):
             print(item[0].start, item[0].stop)
@@ -118,12 +122,21 @@ class MuseCube(Base):
             return flux
 
     def copy(self):
+        """
+        Makes full copy of the cube
+        :return: MuseCube
+        """
         return MuseCube(flux_units=self.flux_units, pixelsize=self.pixel_size, data=self.flux.copy(),
                         stat=self.stat.copy(),
                         header_1=self.header_1.copy(), header_0=self.header_0.copy(),
                         input_wave_cal=self.wave_cal)  # modify copy
 
     def sum(self, stat=False):
+        """
+        Collapse the cube over the z axis
+        :param stat: True if you want to conserve the statistics in the summed image, False if not
+        :return: Image
+        """
         flux = self.flux.sum(axis=0)
         if stat:
             stat = self.stat.sum(axis=0)
@@ -133,6 +146,11 @@ class MuseCube(Base):
                      header_1=self.header_1.copy(), header_0=self.header_0.copy())  # modify copy
 
     def median(self, stat=None):
+        """
+        Calculates the median over the z axis
+        :param stat: True if you want to conserve the statistics in the summed image, False if not
+        :return: Image
+        """
         flux = self.flux.median(axis=0)
         if stat:
             stat = self.stat.median(axis=0)
@@ -152,6 +170,14 @@ class MuseCube(Base):
         return self.wave.coord()
 
     def _to_obj(self, obj, flux, stat=None):
+        """
+        Given flux and stat. To create another object conserving the information of the cube. It is intended for
+        private use only, but it can be used.
+        :param obj:
+        :param flux:
+        :param stat:
+        :return:
+        """
 
         header_0 = self.header_0
         header_1 = self.header_1
@@ -166,7 +192,3 @@ class MuseCube(Base):
 
         elif obj == Spectrum:
             return Spectrum()
-
-
-
-
