@@ -79,7 +79,7 @@ class MuseCube(Base):
         self.wave = WaveCoord(hdr=self.header_1)
 
 
-    def create_white(self, new_white_fitsname='white_from_colapse.fits', stat=False, save=True):
+    def create_white(self, new_white_fitsname=None, stat=False, save=True):
         """
         Function that collapses all wavelengths available to produce a new white image
         :param new_white_fitsname: Name of the new image
@@ -111,7 +111,10 @@ class MuseCube(Base):
         flux = self.flux.__getitem__(item)
         stat = self.stat.__getitem__(item)
 
+
         if isinstance(flux, np.ndarray):
+            if not flux.size:
+                raise ValueError("Out of range")
             if flux.ndim == 3:
                 # should modify headers
                 return self._to_obj(MuseCube, flux=flux, stat=stat)

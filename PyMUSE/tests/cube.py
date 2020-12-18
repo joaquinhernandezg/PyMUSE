@@ -174,7 +174,12 @@ class TestGetItem(unittest.TestCase):
         """
         cube[:, :, :] returns a MuseCube object
         """
-        subcube = self.cube[:, :, :]
+
+        x_min, x_max = np.sort(np.random.randint(0, self.cube.shape[2], 2))
+        y_min, y_max = np.sort(np.random.randint(0, self.cube.shape[1], 2))
+        z_min, z_max = np.sort(np.random.randint(0, self.cube.shape[0], 2))
+
+        subcube = self.cube[z_min:z_max, y_min:y_max, x_min:x_max]
         self.assertIsInstance(subcube, MuseCube)
 
     def test_slice_return_an_image(self):
@@ -183,10 +188,10 @@ class TestGetItem(unittest.TestCase):
         """
         # corregir en la clase
 
-        x_min, x_max = np.random.randint(0, self.cube.shape[2], 2)
-        y_min, y_max = np.random.randint(0, self.cube.shape[1], 2)
-        z  = np.random.randint(0, self.cube.shape[0], 1)[0]
-        image = self.cube[z, x_min:x_max, x_min:x_max]
+        x_min, x_max = np.sort(np.random.randint(0, self.cube.shape[2], 2))
+        y_min, y_max = np.sort(np.random.randint(0, self.cube.shape[1], 2))
+        z = np.random.randint(0, self.cube.shape[0], 1)[0]
+        image = self.cube[z, y_min:y_max, x_min:x_max]
         self.assertIsInstance(image, Image)
 
     def test_slice_return_an_Spectrum(self):
@@ -201,6 +206,14 @@ class TestGetItem(unittest.TestCase):
 
         subimage = self.cube[spectral_range[0]:spectral_range[1], 1:3, 1:23]
         raise  subimage
+
+    def test_raises_error_when_values_outside_limits(self):
+        x_min, x_max = np.sort(np.random.randint(self.cube.shape[2], self.cube.shape[2]+100, 2))
+        y_min, y_max = np.sort(np.random.randint(self.cube.shape[1], self.cube.shape[1]+100, 2))
+        z_min, z_max = np.sort(np.random.randint(self.cube.shape[0], self.cube.shape[0]+100, 2))
+
+        with self.assertRaises(Exception):
+            print(self.cube[z_min:z_max, y_min:y_max, x_min:x_max])
 
 
 
