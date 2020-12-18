@@ -6,7 +6,7 @@ import numpy as np
 
 class TestCubeFromFile(unittest.TestCase):
     def setUp(self):
-        self.filename = "../minicube.fits"
+        self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
         self.image = self.cube[0]
 
@@ -30,7 +30,7 @@ class TestCubeFromFile(unittest.TestCase):
 
 class TestGetItem(unittest.TestCase):
     def setUp(self):
-        self.filename = "../minicube.fits"
+        self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
         self.image = self.cube[0]
 
@@ -46,12 +46,12 @@ class TestGetItem(unittest.TestCase):
 
 class TestIter(unittest.TestCase):
     def setUp(self):
-        self.filename = "../minicube.fits"
+        self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
 
 class TestAritmetic(unittest.TestCase):
     def setUp(self):
-        self.filename = "../minicube.fits"
+        self.filename = "minicube.fits"
         self.cube = MuseCube(self.filename)
 
     def test_add_two_images_returns_Image(self):
