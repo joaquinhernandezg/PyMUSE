@@ -10,6 +10,7 @@ from astropy.io import fits
 from mpdaf.obj import WCS, WaveCoord
 
 from .image import Image
+from .spectrum import Spectrum
 from .base import Base
 
 __all__ = ('MuseCube')
@@ -126,7 +127,7 @@ class MuseCube(Base):
                 # should modify headers
                 return self._to_obj(Image, flux=flux, stat=stat)
             elif flux.ndim == 1:
-                return Spectrum
+                return self._to_obj(Spectrum, flux=flux, stat=stat)
         else:
             return flux
 
@@ -201,4 +202,4 @@ class MuseCube(Base):
             return MuseCube(data=flux, stat=stat, header_0=header_0, header_1=header_1)
 
         elif obj == Spectrum:
-            return Spectrum()
+            return Spectrum(data=flux, stat=stat, header_0=header_0, header_1=header_1)
