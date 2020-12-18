@@ -27,49 +27,6 @@ class Image(Base):
     def _Base__set_coordinates_from_header(self):
         self.wcs = WCS(hdr=self.header_1)
 
-    @property
-    def flux(self):
-        return self._flux
-
-    @flux.setter
-    def flux(self, value):
-        if not isinstance(value, np.ndarray) or value.ndim != 2:
-            raise ValueError(f"Invalid flux shapes, got {value.ndim}, expected 2")
-        if self.flux is None:
-            self._flux = value
-        elif value.shape != self.stat.shape:
-            raise ValueError(f"Stat and flux can not have different shapes, try creating a copy instead")
-        else:
-            self._flux = value
-
-    @property
-    def stat(self):
-        return self._stat
-
-    @stat.setter
-    def stat(self, value):
-        if value is None:
-            self._stat = None
-            return
-        if not isinstance(value, np.ndarray) and value is not None:
-            raise ValueError(f"Invalid flux shape, got {value.ndim}, expected 3")
-        if value.ndim != 2:
-            raise ValueError(f"Invalid flux shape, got {value.ndim}, expected 3")
-        if self.stat is None:
-            self._stat = value
-        elif value.shape != self.flux.shape:
-            raise ValueError(f"Stat and flux can not have different shapes, try creating a cube instead")
-        else:
-            self._flux = value
-
-    def __load_from_fits_file(self, filename):
-        hdulist = fits.open(filename)
-        self.header_0 = hdulist[0]
-        self.header_1 = hdulist[1]
-
-        self.flux = hdulist[1].data.astype(np.float64)
-        self.stat = hdulist[2].data.astype(np.float64)
-        pass
 
     def __getitem__(self, item):
         flux = self.flux.__getitem__(item)
@@ -78,7 +35,7 @@ class Image(Base):
         if isinstance(flux, np.ndarray):
 
             if flux.ndim == 2:
-                return self.__to_obj(Image, flux, stat)
+                return self._to_obj(Image, flux, stat)
             elif flux.ndim == 1:
                 return Spectrum
             else:
