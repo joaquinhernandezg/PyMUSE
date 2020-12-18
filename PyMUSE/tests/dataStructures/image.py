@@ -2,12 +2,13 @@ import unittest
 from PyMUSE.musecube_new import MuseCube
 from PyMUSE.image import Image
 import numpy as np
+import os
 
+cube_filename = os.path.join(os.path.dirname(__file__), "../minicube.fits")
 
 class TestCubeFromFile(unittest.TestCase):
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
         self.image = self.cube[0]
 
     def testImageHasflux(self):
@@ -30,8 +31,7 @@ class TestCubeFromFile(unittest.TestCase):
 
 class TestGetItem(unittest.TestCase):
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
         self.image = self.cube[0]
 
     def test_get_item_slice_return_a_value(self):
@@ -46,12 +46,11 @@ class TestGetItem(unittest.TestCase):
 
 class TestIter(unittest.TestCase):
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
 
 class TestAritmetic(unittest.TestCase):
     def setUp(self):
-        self.filename = "minicube.fits"
+        self.filename = "../minicube.fits"
         self.cube = MuseCube(self.filename)
 
     def test_add_two_images_returns_Image(self):

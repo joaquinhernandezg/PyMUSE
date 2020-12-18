@@ -6,14 +6,14 @@ import astropy.units as u
 import os
 import shutil
 
+cube_filename = os.path.join(os.path.dirname(__file__), "../minicube.fits")
 
 class TestCubeFromFile(unittest.TestCase):
     """
     Tests presence of attributes when reading from file
     """
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
 
     def testCubeHasflux(self):
         self.assertTrue(hasattr(self.cube, "flux"))
@@ -56,8 +56,7 @@ class TestModifyAttributesOnTheRun(unittest.TestCase):
     Test changesa of attributes on the run
     """
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
 
     def test_cant_set_flux_with_different_dimensions(self):
         shape_flux = list(self.cube.flux.shape)
@@ -95,8 +94,7 @@ class TestMethods(unittest.TestCase):
     Test generic methods
     """
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
 
         self.temp_path = os.path.join(os.path.dirname(__file__), "temp")
 
@@ -135,8 +133,7 @@ class TestCubeCopy(unittest.TestCase):
     Test copy method
     """
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
         self.copy = self.cube.copy()
 
     def test_copy_maintains_header_0(self):
@@ -163,8 +160,7 @@ class TestCubeCopy(unittest.TestCase):
 
 class TestGetItem(unittest.TestCase):
     def setUp(self) -> None:
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
 
     def test_get_item_slice_return_a_value(self):
         """
@@ -225,8 +221,7 @@ class TestGetItem(unittest.TestCase):
 
 class TestIter(unittest.TestCase):
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
 
     def testIterReturnImage(self):
         for image in self.cube:
@@ -235,8 +230,7 @@ class TestIter(unittest.TestCase):
 
 class TestSum(unittest.TestCase):
     def setUp(self):
-        self.filename = "minicube.fits"
-        self.cube = MuseCube(self.filename)
+        self.cube = MuseCube(cube_filename)
 
     def test_sum_works(self):
         image = self.cube.sum()
@@ -246,3 +240,4 @@ class TestSum(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+    print(__file__)
