@@ -89,9 +89,7 @@ class Image(Base):
                      header_1=self.header_1.copy(), header_0=self.header_0.copy()) #modify copy
 
     def __change_flux_and_stat(self, new_flux, new_stat):
-        new_image = self.copy()
-        new_image.flux = new_flux
-        new_image.stat = new_stat
+        new_image = self._to_obj(Image, new_flux, new_stat)
         return new_image
 
 

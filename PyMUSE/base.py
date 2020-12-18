@@ -48,7 +48,9 @@ class Base(ABC):
         :return Mone:
         """
         # modify when value is None
-        if not isinstance(value, np.ndarray) or value.ndim != self.n_dims:
+        if not isinstance(value, np.ndarray):
+            raise ValueError(f"Flux must be a numpy array")
+        if value.ndim != self.n_dims:
             raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected {self.n_dims}")
         if self.flux is None:
             self._flux = value
@@ -69,7 +71,11 @@ class Base(ABC):
         :return:
         """
         # mofify when value is None
-        if not isinstance(value, np.ndarray) or value.ndim != self.n_dims:
+        if value is None:
+            self._stat = None
+        elif not isinstance(value, np.ndarray):
+            raise ValueError(f"Flux must be a numpy array")
+        elif value.ndim != self.n_dims:
             raise ValueError(f"Invalid flux dimensions, got {value.ndim}, expected {self.n_dims}")
         elif value.shape != self.flux.shape:
             raise ValueError(f"Stat and flux can not have different dimensions, try creating a copy instead")
