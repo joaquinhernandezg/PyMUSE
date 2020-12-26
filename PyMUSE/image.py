@@ -20,7 +20,7 @@ class Image(Base):
         # verificar pixel size and flux units are apropiated astropy units
         # verificar data y stat son np array
         
-        super(Image, self).__init__(filename, data, stat, header_0, header_1)
+        super(Image, self).__init__(filename=filename, data=data, stat=stat, header_0=header_0, header_1=header_1)
         self.flux_units = flux_units #shoud be read_from_file
         self.pixel_size = pixelsize #should be read from file
 

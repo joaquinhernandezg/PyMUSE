@@ -195,6 +195,8 @@ class MuseCube(Base):
 
         if obj == Image:
             # change header
+            header_0 = remove_dims_from_header(header_0)
+            header_1 = remove_dims_from_header(header_1)
             return Image(data=flux, stat=stat, header_0=header_0, header_1=header_1)
 
         elif obj == MuseCube:

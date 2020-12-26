@@ -15,7 +15,7 @@ class Base(ABC):
         self._flux = None
         self._stat = None
 
-        if filename:
+        if filename is not None:
             self.__load_from_fits_file(filename)
 
         else:
