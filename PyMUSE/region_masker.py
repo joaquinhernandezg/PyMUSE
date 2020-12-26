@@ -58,10 +58,7 @@ class MaskEllipse(RegionMasker):
 
         region_string = Ds9RegionString.ellipse_params_to_region_string(x_c, y_c, a, b, theta, color="green")
         mask = self.from_region_string(object, region_string)
-
-        object_copy = object._to_obj(type(object), flux=object.flux*mask, stat=object.stat*mask)
-
-        return object_copy
+        return object.mask(mask)
 
 
 

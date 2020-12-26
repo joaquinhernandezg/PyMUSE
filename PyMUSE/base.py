@@ -126,3 +126,15 @@ class Base(ABC):
     @abstractmethod
     def _to_obj(self, obj, flux, stat=None):
         pass
+
+    def mask(self, mask_array):
+        if not mask_array.dtype == 'bool':
+            raise ValueError("Invalid Mask type, should be boolean")
+        masked_flux = self.flux*mask_array
+        #masked_flux[masked_flux == 0.0] = np.nan
+
+        masked_stat = self.stat * mask_array
+        #masked_stat[masked_stat == 0.0] = np.nan
+        object_copy = self._to_obj(type(self), flux=masked_flux, stat=masked_stat)
+        return object_copy
+
