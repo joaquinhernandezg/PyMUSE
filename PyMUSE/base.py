@@ -135,6 +135,21 @@ class Base(ABC):
 
         masked_stat = self.stat * mask_array
         masked_stat[masked_stat == 0.0] = np.nan
+
+        #this is for crop and reduce the size of the masked cube, obtained from
+        #https://stackoverflow.com/questions/25831023/numpy-crop-2d-array-to-non-nan-values
+        nans = np.isnan(masked_flux[0, :, :])
+        nancols = np.all(nans, axis=0)  # 10 booleans, True where col is all NAN
+        nanrows = np.all(nans, axis=1)  # 15 booleans
+
+        firstcol = nancols.argmin()  # 5, the first index where not NAN
+        firstrow = nanrows.argmin()  # 7
+
+        lastcol = len(nancols) - nancols[::-1].argmin()  # 8, last index where not NAN
+        lastrow = len(nanrows) - nanrows[::-1].argmin()  #
+
+        masked_flux = masked_flux[:, firstrow:lastrow, firstcol:lastcol]
+        masked_stat = masked_stat[:, firstrow:lastrow, firstcol:lastcol]
         object_copy = self._to_obj(type(self), flux=masked_flux, stat=masked_stat)
         return object_copy
 
