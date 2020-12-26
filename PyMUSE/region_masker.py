@@ -26,8 +26,18 @@ class MaskBox(RegionMasker):
     def __init__(self):
         super(MaskBox, self).__init__()
 
-    def from_params(self):
-        pass
+    def from_params(self, object, x_c, y_c, a, b, coord_system='pix', origin=0, mask_outside=True):
+        if origin == 0 and coord_system == 'pix':
+            x_c += 1
+            y_c += 1
+        if coord_system == 'wcs':
+            y_c, x_c = object.wcs.sky2pix([y_c, x_c], nearest=True)
+
+        region_string = Ds9RegionString.box_params_to_region_string(x_c, y_c, a, b, color="green")
+        mask = self.from_region_string(object, region_string)
+        if mask_outside:
+            mask = ~mask
+        return object.mask(mask)
 
 
 
@@ -35,7 +45,7 @@ class MaskEllipse(RegionMasker):
     def __init__(self):
         super(MaskEllipse, self).__init__()
 
-    def from_params(self, object, x_c, y_c, params, coord_system='pix', origin=0):
+    def from_params(self, object, x_c, y_c, params, coord_system='pix', origin=0, mask_outside=True):
         if not isinstance(params, (int, float, tuple, list, np.ndarray)):
             raise ValueError('Not ready for this `radius` type.')
 
@@ -58,10 +68,9 @@ class MaskEllipse(RegionMasker):
 
         region_string = Ds9RegionString.ellipse_params_to_region_string(x_c, y_c, a, b, theta, color="green")
         mask = self.from_region_string(object, region_string)
-
-        object_copy = object._to_obj(type(object), flux=object.flux*mask, stat=object.stat*mask)
-
-        return object_copy
+        if mask_outside:
+            mask = ~mask
+        return object.mask(mask)
 
 
 
@@ -69,8 +78,24 @@ class MaskPolygon(RegionMasker):
     def __init__(self):
         super(MaskPolygon, self).__init__()
 
-    def from_params(self):
-        pass
+    def from_params(self, object, coords_list, coord_system='pix', origin=0, mask_outside=True):
+        if len(coords_list)%2 != 0:
+            raise ValueError('coords_list should have even number of elements')
+
+        if origin == 0 and coord_system == 'pix':
+            #sumar uno a cada elemento de coords_list
+            pass
+
+        if coord_system == 'wcs':
+            #transformar cada par de elementos de coords_list a pix
+            #y_c, x_c = object.wcs.sky2pix([y_c, x_c], nearest=True)
+            pass
+
+        region_string = Ds9RegionString.polygon_params_to_region_string(coords_list, color="green")
+        mask = self.from_region_string(object, region_string)
+        if mask_outside:
+            mask = ~mask
+        return object.mask(mask)
 
 
 class Ds9Mask:
@@ -108,5 +133,17 @@ class Ds9RegionString(object):
                                                                                radius[1],
                                                                                radius[2], color)
         return region_string
+
+    @staticmethod
+    def box_params_to_region_string(x_c, y_c, a, b, color="green"):
+        region_string = 'physical;box({},{},{},{},0) # color = {}'.format(x_c, y_c, a, b, color)
+        return region_string
+
+    @staticmethod
+    def polygon_params_to_region_string(coord_list, color="green"):
+        coords = ", ".join(list(map(str, coord_list)))
+        region_string = 'physical;polygon({}) # color = {}'.format(coords, color)
+        return region_string
+
 
 
