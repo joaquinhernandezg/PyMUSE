@@ -26,8 +26,18 @@ class MaskBox(RegionMasker):
     def __init__(self):
         super(MaskBox, self).__init__()
 
-    def from_params(self):
-        pass
+    def from_params(self, object, x_c, y_c, a, b, coord_system='pix', origin=0, mask_outside=True):
+        if origin == 0 and coord_system == 'pix':
+            x_c += 1
+            y_c += 1
+        if coord_system == 'wcs':
+            y_c, x_c = object.wcs.sky2pix([y_c, x_c], nearest=True)
+
+        region_string = Ds9RegionString.box_params_to_region_string(x_c, y_c, a, b, color="green")
+        mask = self.from_region_string(object, region_string)
+        if mask_outside:
+            mask = ~mask
+        return object.mask(mask)
 
 
 
@@ -35,7 +45,7 @@ class MaskEllipse(RegionMasker):
     def __init__(self):
         super(MaskEllipse, self).__init__()
 
-    def from_params(self, object, x_c, y_c, params, coord_system='pix', origin=0):
+    def from_params(self, object, x_c, y_c, params, coord_system='pix', origin=0, mask_outside=True):
         if not isinstance(params, (int, float, tuple, list, np.ndarray)):
             raise ValueError('Not ready for this `radius` type.')
 
@@ -58,6 +68,8 @@ class MaskEllipse(RegionMasker):
 
         region_string = Ds9RegionString.ellipse_params_to_region_string(x_c, y_c, a, b, theta, color="green")
         mask = self.from_region_string(object, region_string)
+        if mask_outside:
+            mask = ~mask
         return object.mask(mask)
 
 
@@ -104,6 +116,11 @@ class Ds9RegionString(object):
         region_string = 'physical;ellipse({},{},{},{},{}) # color = {}'.format(x_center, y_center, radius[0],
                                                                                radius[1],
                                                                                radius[2], color)
+        return region_string
+
+    @staticmethod
+    def box_params_to_region_string(x_c, y_c, a, b, color="green"):
+        region_string = 'physical;box({},{},{},{},0) # color = {}'.format(x_c, y_c, a, b, color)
         return region_string
 
 
