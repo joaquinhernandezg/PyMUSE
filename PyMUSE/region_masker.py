@@ -18,7 +18,7 @@ class RegionMasker(ABC):
 
     @staticmethod
     def from_region_string(object, region_string):
-        mask = Ds9Mask.get_2d_mask_from_region_string(region_string)
+        mask = Ds9Mask.get_2d_mask_from_region_string(object, region_string)
         return mask
 
 
@@ -57,7 +57,11 @@ class MaskEllipse(RegionMasker):
             raise ValueError('If iterable, the length of params must be == 3; otherwise try float.')
 
         region_string = Ds9RegionString.ellipse_params_to_region_string(x_c, y_c, a, b, theta, color="green")
-        return self.from_region_string(object, region_string)
+        mask = self.from_region_string(object, region_string)
+
+        object_copy = object._to_obj(type(object), flux=object.flux*mask, stat=object.stat*mask)
+
+        return object_copy
 
 
 
@@ -71,7 +75,7 @@ class MaskPolygon(RegionMasker):
 
 class Ds9Mask:
     @staticmethod
-    def get_2d_mask_from_region_string(self, object, region_string, inverse=True):
+    def get_2d_mask_from_region_string(object, region_string, inverse=True):
         from pyregion.region_to_filter import as_region_filter
 
         if isinstance(object, MuseCube):
