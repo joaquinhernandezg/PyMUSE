@@ -6,7 +6,7 @@ import os
 
 cube_filename = os.path.join(os.path.dirname(__file__), "../minicube.fits")
 
-class TestCubeFromFile(unittest.TestCase):
+class TestImageFromCube(unittest.TestCase):
     def setUp(self):
         self.cube = MuseCube(cube_filename)
         self.image = self.cube[0]
@@ -28,6 +28,13 @@ class TestCubeFromFile(unittest.TestCase):
 
     def testImageHasfluxhasPixel_size(self):
         self.assertTrue(hasattr(self.image, "pixel_size"))
+
+    def test_image_header_0_is_not_none(self):
+        self.assertTrue(self.image.header_0 is not None)
+
+    def test_image_header_1_is_not_none(self):
+        self.assertTrue(self.image.header_1 is not None)
+
 
 class TestGetItem(unittest.TestCase):
     def setUp(self):
