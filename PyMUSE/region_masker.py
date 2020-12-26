@@ -78,8 +78,24 @@ class MaskPolygon(RegionMasker):
     def __init__(self):
         super(MaskPolygon, self).__init__()
 
-    def from_params(self):
-        pass
+    def from_params(self, object, coords_list, coord_system='pix', origin=0, mask_outside=True):
+        if len(coords_list)%2 != 0:
+            raise ValueError('coords_list should have even number of elements')
+
+        if origin == 0 and coord_system == 'pix':
+            #sumar uno a cada elemento de coords_list
+            pass
+
+        if coord_system == 'wcs':
+            #transformar cada par de elementos de coords_list a pix
+            #y_c, x_c = object.wcs.sky2pix([y_c, x_c], nearest=True)
+            pass
+
+        region_string = Ds9RegionString.polygon_params_to_region_string(coords_list, color="green")
+        mask = self.from_region_string(object, region_string)
+        if mask_outside:
+            mask = ~mask
+        return object.mask(mask)
 
 
 class Ds9Mask:
@@ -122,5 +138,12 @@ class Ds9RegionString(object):
     def box_params_to_region_string(x_c, y_c, a, b, color="green"):
         region_string = 'physical;box({},{},{},{},0) # color = {}'.format(x_c, y_c, a, b, color)
         return region_string
+
+    @staticmethod
+    def polygon_params_to_region_string(coord_list, color="green"):
+        coords = ", ".join(list(map(str, coord_list)))
+        region_string = 'physical;polygon({}) # color = {}'.format(coords, color)
+        return region_string
+
 
 
